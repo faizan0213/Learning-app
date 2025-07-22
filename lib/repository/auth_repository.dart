@@ -23,7 +23,15 @@ class AuthRepository {
 
       final userModel = UserModel(uid: uid, name: name, email: email);
 
+      //  Save user data
       await _firestore.collection('users').doc(uid).set(userModel.toMap());
+
+      //Create call token data
+      await _firestore.collection('call_tokens').doc(uid).set({
+        'user_id': uid,
+        'call_id': "call_${uid.substring(0, 6)}", // simple unique call ID
+        'token': "dummy_token_$uid", // can be replaced with real token later
+      });
 
       return userModel;
     } on FirebaseAuthException catch (e) {

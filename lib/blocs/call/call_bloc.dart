@@ -10,20 +10,26 @@ class CallBloc extends Bloc<CallEvent, CallState> {
       try {
         final doc = await FirebaseFirestore.instance
             .collection('call_tokens')
-            .doc('dummy_audio')
+            .doc(event.userId)
             .get();
+
         final data = doc.data();
+        print("Fetched data: ${data}");
+        print("Fetched data: ${data}");
+
         if (data != null) {
-          emit(CallLoaded(
-            token: data['token'],
-            userId: data['user_id'],
-            callId: data['call_id'],
-          ));
+          emit(
+            CallLoaded(
+              token: data['token'],
+              userId: data['user_id'],
+              callId: data['call_id'],
+            ),
+          );
         } else {
-          emit(CallError("No token found."));
+          emit(CallError("No token found for this user ID."));
         }
       } catch (e) {
-        emit(CallError(e.toString()));
+        emit(CallError("Failed to fetch call data: ${e.toString()}"));
       }
     });
   }

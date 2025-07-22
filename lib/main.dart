@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:learning_app/blocs/call/call_bloc.dart';
 import 'package:learning_app/blocs/course/course_bloc.dart';
 import 'package:learning_app/blocs/user/user_bloc.dart';
 import 'package:learning_app/repository/course_repository.dart';
@@ -31,12 +32,13 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (_) => CourseBloc(courseRepository: CourseRepository()),
         ),
+        BlocProvider(create: (_) => CallBloc()),
       ],
       child: MaterialApp(
         title: 'Learning App',
         theme: ThemeData(primarySwatch: Colors.deepPurple),
         home: const LoginScreen(),
-        
+
         debugShowCheckedModeBanner: false,
       ),
     );
