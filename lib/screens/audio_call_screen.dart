@@ -19,7 +19,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   final TextEditingController _receiverIdController = TextEditingController();
 
-  bool _callStarted = false; // to avoid multiple screens
+  bool _callStarted = false;  
 
   @override
   Widget build(BuildContext context) {
