@@ -15,11 +15,12 @@ class AudioCallScreen extends StatefulWidget {
 
 class _AudioCallScreenState extends State<AudioCallScreen> {
   final int appID = 1585869921;
-  final String appSign = '';
+  final String appSign =
+      'ca2f5a9d329267093d7fd40b3a7186bf6ca738c4f77763da4f6c892b1ab26f13';
 
   final TextEditingController _receiverIdController = TextEditingController();
 
-  bool _callStarted = false;  
+  bool _callStarted = false;
 
   @override
   Widget build(BuildContext context) {
@@ -31,11 +32,37 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      "Your User ID:",
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    SelectableText(
+                      FirebaseAuth.instance.currentUser?.uid ?? 'Not logged in',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _receiverIdController,
                 decoration: const InputDecoration(
                   labelText: 'Enter Receiver User ID',
                   border: OutlineInputBorder(),
+                  helperText: 'Paste the User ID of the person you want to call',
                 ),
               ),
               const SizedBox(height: 16),
@@ -50,46 +77,65 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                   if (receiverId.isNotEmpty && callerId != receiverId) {
                     _callStarted = false;
 
+                    // First check if receiver exists and has call token
                     context.read<CallBloc>().add(
-                      FetchCallData(userId: callerId), // fetch caller's token
+                      FetchCallData(userId: receiverId),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("Please enter a different valid receiver ID"),
+                        content: Text(
+                          "Please enter a different valid receiver ID",
+                        ),
                       ),
                     );
                   }
                 },
                 icon: const Icon(Icons.call),
-                label: const Text("Fetch & Call"),
+                label: const Text("Start Call"),
               ),
               const SizedBox(height: 24),
               Expanded(
                 child: BlocListener<CallBloc, CallState>(
                   listener: (context, state) {
-                    print("📣 Bloc State Changed: $state");
+                    print("Bloc State Changed: $state");
 
                     if (state is CallLoaded && !_callStarted) {
+                      // Receiver exists, now create call invitation
+                      final receiverId = _receiverIdController.text.trim();
+                      final callerId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+                      print("Receiver found, creating call invitation...");
+                      print("Receiver Data - ID: ${state.userId}, Token: ${state.token}");
+
+                      // Note: The bloc now generates its own unique call ID
+                      // So we don't need to pass state.callId anymore
+                      context.read<CallBloc>().add(
+                        CreateCallInvitation(
+                          callerId: callerId,
+                          receiverId: receiverId,
+                          callId: '', // This parameter is not used in the new bloc implementation
+                        ),
+                      );
+                    } else if (state is CallInvitationSent && !_callStarted) {
                       _callStarted = true;
 
-                      final receiverId = _receiverIdController.text.trim();
+                      final callerId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-                      print("Call Data Fetched:");
-                      print("Caller ID: ${state.userId}");
+                      print("Call invitation sent successfully!");
                       print("Call ID: ${state.callId}");
-                      print("Token: ${state.token}");
-                      print("Receiver ID: $receiverId");
+                      print("Receiver ID: ${state.receiverId}");
 
+                      // Start the call interface with the unique call ID generated by the bloc
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ZegoUIKitPrebuiltCall(
                             appID: appID,
                             appSign: appSign,
-                            userID: state.userId, // logged in user
-                            userName: 'User_${state.userId}',
-                            callID: state.callId,
+                            userID: callerId,
+                            userName: 'User_$callerId',
+                            callID: state.callId, // Use the unique call ID from the bloc
                             config: ZegoUIKitPrebuiltCallConfig.oneOnOneVoiceCall(),
                           ),
                         ),
@@ -106,7 +152,9 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                       if (state is CallLoading) {
                         return const Center(child: CircularProgressIndicator());
                       } else if (state is CallLoaded) {
-                        return const Center(child: Text("Connecting..."));
+                        return const Center(child: Text("Creating call invitation..."));
+                      } else if (state is CallInvitationSent) {
+                        return const Center(child: Text("Connecting to call..."));
                       } else {
                         return const Center(
                           child: Text("Enter receiver ID to start a call"),
@@ -121,5 +169,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _receiverIdController.dispose();
+    super.dispose();
   }
 }

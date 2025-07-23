@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:learning_app/screens/audio_call_screen.dart';
 import '../../models/course_model.dart';
 
 class CourseDetailScreen extends StatelessWidget {

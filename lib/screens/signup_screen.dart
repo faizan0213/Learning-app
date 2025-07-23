@@ -18,10 +18,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final _nameController = TextEditingController();
 
   void _signup() {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final name = _nameController.text.trim();
-
     context.read<AuthBloc>().add(
       SignUpRequested(
         name: _nameController.text.trim(),

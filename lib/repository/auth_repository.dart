@@ -59,6 +59,17 @@ class AuthRepository {
 
       if (!snapshot.exists) throw Exception("User data not found in Firestore");
 
+      // Check if call token exists, if not create it
+      final callTokenDoc = await _firestore.collection('call_tokens').doc(uid).get();
+      if (!callTokenDoc.exists) {
+        await _firestore.collection('call_tokens').doc(uid).set({
+          'user_id': uid,
+          'call_id': "call_${uid.substring(0, 6)}", // simple unique call ID
+          'token': "dummy_token_$uid", // can be replaced with real token later
+        });
+        print("Created missing call token for user: $uid");
+      }
+
       return UserModel.fromMap(snapshot.data()!);
     } on FirebaseAuthException catch (e) {
       throw Exception(e.message);
